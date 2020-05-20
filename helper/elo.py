@@ -17,6 +17,10 @@ def existing_rating(team_1yr, team_2yr):
     rating = 0.80 * rating + 0.20 * new_rating() #to avoid drift
     return rating
 
+def logistic(margin):
+    n = 0.5
+    return ((4/n)/(1+math.exp(-n*margin))-2/n)
+
 def update_rating(year, teams, match):
     r, b = [], []
     for i in range(len(match.red)): r.append(teams[match.red[i]].rating)
@@ -25,10 +29,11 @@ def update_rating(year, teams, match):
 
     win_margin = (match.red_score - match.blue_score)/sd[year]
     pred_win_margin = 4/1000*(sum(r)-sum(b))
+    diff = logistic(win_margin-pred_win_margin)
 
     k = 4 if match.playoff else 12
-    for i in range(len(r)): r[i] = r[i] + k*(win_margin-pred_win_margin)
-    for i in range(len(b)): b[i] = b[i] - k*(win_margin-pred_win_margin)
+    for i in range(len(r)): r[i] = r[i] + k*(diff)
+    for i in range(len(b)): b[i] = b[i] - k*(diff)
     match.set_ratings_end(r.copy(), b.copy())
 
     for i in range(len(r)): teams[match.red[i]].set_rating(r[i])
