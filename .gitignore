@@ -3,4 +3,4 @@
 *.p
 
 constants.py
-docs/constants.txt
+docs/*

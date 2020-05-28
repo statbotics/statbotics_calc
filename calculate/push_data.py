@@ -1,8 +1,5 @@
-import datetime
-start = datetime.datetime.now()
-
 import constants
-from helper import utils
+import utils
 import stats
 
 from sqlalchemy import create_engine
@@ -10,6 +7,7 @@ import pandas as pd
 import pymysql
 
 import statistics
+import datetime
 import json
 
 blacklist = [
@@ -86,6 +84,7 @@ def get_data(start_year, end_year):
     champ_keys = ['arc', 'cars', 'carv', 'cur', 'dal', 'dar', 'gal', 'hop', 'new', 'roe', 'tes', 'tur']
 
     team_years = []
+    all_teams_info = utils.loadAllTeamsInfo()
     id = 1
 
     for year in range(start_year, end_year+1):
@@ -93,13 +92,6 @@ def get_data(start_year, end_year):
         year_data_matches = team_matches[team_matches.year == year]
 
         teams_temp = utils.loadTeams(year)
-        num_teams = len(teams_temp)
-
-        ratings = []
-        for t in teams_temp.values():
-            ratings.append(t.get_rating_max())
-        ratings.sort()
-
         for team in year_data_events['team'].unique():
             team_data_events = year_data_events[year_data_events.team == team]
             team_data_matches = year_data_matches[year_data_matches.team == team]
@@ -115,19 +107,19 @@ def get_data(start_year, end_year):
             elo_mean = round(team_data_matches['elo_end'].mean())
             elo_max = teams_temp[team].get_rating_max()
 
-            rank = num_teams-ratings.index(elo_max)
-            percentile = round((rank/num_teams), 4)
             elo_max = round(elo_max) #after so doesn't mess with index
 
-            team_years.append([id, year, team, elo_start, elo_pre_champs, elo_end, elo_mean, elo_max, elo_diff, rank, percentile])
+            [name, region, district, _] = all_teams_info[team]
+
+            team_years.append([id, year, team, name, region, district, elo_start,
+                elo_pre_champs, elo_end, elo_mean, elo_max, elo_diff])
             id += 1
 
-    team_years = pd.DataFrame(team_years, columns = ["id", "year", "team", "elo_start",
-        "elo_pre_champs", "elo_end", "elo_mean", "elo_max", "elo_diff", "rank", "percentile"])
+    team_years = pd.DataFrame(team_years, columns = ["id", "year", "team", "name", "region", "district",
+        "elo_start", "elo_pre_champs", "elo_end", "elo_mean", "elo_max", "elo_diff"])
     team_years = team_years.sort_values(by=['year', 'team'])
 
     teams = []
-    all_teams_info = utils.loadAllTeamsInfo()
 
     utils.saveAllTeams(team_years['team'].unique())
     for team in team_years['team'].unique():
@@ -138,17 +130,28 @@ def get_data(start_year, end_year):
             elos[team_data["year"].iloc[i]-start_year]=round(team_data["elo_max"].iloc[i])
             elo_sum, count = elo_sum + team_data["elo_max"].iloc[i], count + 1
         elo, elo_mean, elo_max = elos[-1], round(elo_sum/count), max(elos)
-        if(elo==-1): elo=elos[-2] #accounts for 2020 season suspension
+
+        #takes whatever years exist 2016-Present
+        total, years = sum(elos[-5:]), 5
+        for i in range(5):
+            if(elos[-i-1]==-1):
+                total, years = total + 1, years - 1
+        if(years==0): elo_recent = -1
+        else: elo_recent = round(total/years)
+
+         #accounts for 2020 season suspension
+        if(elo==-1): elo = elos[-2]
+
         elo_max_year = start_year+elos.index(elo_max)
         elos = ", ".join(str(x) for x in elos)
         [name, region, district, years] = all_teams_info[team]
         active = (elo!=-1) #have a current elo
 
         teams.append([team, name, region, district, years, active,
-            elo, elo_mean, elo_max, elo_max_year])
+            elo, elo_recent, elo_mean, elo_max, elo_max_year])
 
-    teams = pd.DataFrame(teams, columns=["team", "name", "region", "district",
-        "years_active", "active", "elo", "elo_mean", "elo_max", "elo_max_year"])
+    teams = pd.DataFrame(teams, columns=["team", "name", "region", "district", "years_active",
+        "active", "elo", "elo_recent", "elo_mean", "elo_max", "elo_max_year"])
     teams = teams.sort_values(by=['team'])
 
     events = []
@@ -214,15 +217,13 @@ def push_data(data):
     events.to_sql('rankings_event', engine, if_exists='replace', index=False)
     years.to_sql('rankings_year', engine, if_exists='replace', index=False)
 
-def main():
-    start_year = 2002
-    end_year = 2020
-
-    data = get_data(start_year, end_year)
+def main(startYear, endYear):
+    data = get_data(startYear, endYear)
     push_data(data)
 
 if __name__ == "__main__":
+    start = datetime.datetime.now()
     main()
 
-end = datetime.datetime.now()
-print("Total Time: " + str(end-start))
+    end = datetime.datetime.now()
+    print("Total Time: " + str(end-start))
