@@ -109,14 +109,14 @@ def get_data(start_year, end_year):
 
             elo_max = round(elo_max) #after so doesn't mess with index
 
-            [name, region, district, _] = all_teams_info[team]
+            [name, country, state, district, _] = all_teams_info[team]
 
             team_years.append([id, year, team, name, region, district, elo_start,
                 elo_pre_champs, elo_end, elo_mean, elo_max, elo_diff])
             id += 1
 
-    team_years = pd.DataFrame(team_years, columns = ["id", "year", "team", "name", "region", "district",
-        "elo_start", "elo_pre_champs", "elo_end", "elo_mean", "elo_max", "elo_diff"])
+    team_years = pd.DataFrame(team_years, columns = ["id", "year", "team", "name", "country", "state",
+    "district", "elo_start", "elo_pre_champs", "elo_end", "elo_mean", "elo_max", "elo_diff"])
     team_years = team_years.sort_values(by=['year', 'team'])
 
     teams = []
@@ -139,19 +139,30 @@ def get_data(start_year, end_year):
         if(years==0): elo_recent = -1
         else: elo_recent = round(total/years)
 
-         #accounts for 2020 season suspension
-        if(elo==-1): elo = elos[-2]
+        '''accounts for 2020 season suspension (with mean revision)'''
+        if(elo==-1):
+            try: elo_1yr = elo[-2]
+            except Exception as e: elo_1yr = -1
+
+            try: elo_2yr = elo[-3]
+            except Exception as e: elo_2yr = -1
+
+            if(elo_1yr==-1):
+                elo = -1 #team has not played last two years, inactive
+            elif(elo_2yr==-1):
+                elo = elo_1yr * 0.56 + 1450 * 0.44 #rookie team
+            else:
+                elo = elo_1yr * 0.56 + elo_2yr * 0.24 + 1450 * 0.20
 
         elo_max_year = start_year+elos.index(elo_max)
-        elos = ", ".join(str(x) for x in elos)
-        [name, region, district, years] = all_teams_info[team]
+        [name, country, state, district, years] = all_teams_info[team]
         active = (elo!=-1) #have a current elo
 
-        teams.append([team, name, region, district, years, active,
+        teams.append([team, name, country, state, district, years, active,
             elo, elo_recent, elo_mean, elo_max, elo_max_year])
 
-    teams = pd.DataFrame(teams, columns=["team", "name", "region", "district", "years_active",
-        "active", "elo", "elo_recent", "elo_mean", "elo_max", "elo_max_year"])
+    teams = pd.DataFrame(teams, columns=["team", "name", "country", "state", "district",
+    "years_active", "active", "elo", "elo_recent", "elo_mean", "elo_max", "elo_max_year"])
     teams = teams.sort_values(by=['team'])
 
     events = []
