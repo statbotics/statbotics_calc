@@ -1,3 +1,4 @@
+import numpy as np
 import itertools
 import math
 
@@ -10,29 +11,112 @@ sd_new = {2002: 11.82, 2003: 32.49, 2004: 39.94, 2005: 20.61, 2006: 23.07, 2007:
     2015: 50.42, 2016: 33.80, 2017: 84.71, 2018: 108.24, 2019: 19.57, 2020: 44.50}
 
 def new_rating():
-    return 1450
+    return [1500, 350]
 
 def existing_rating(team_1yr, team_2yr):
+    c = 250 #to tune
+    rating_1yr, RD_1yr = team_1yr
+    rating_2yr, RD_2yr = team_2yr
     rating = 0.70 * team_1yr + 0.30 * team_2yr #previous seasons elo
     rating = 0.80 * rating + 0.20 * new_rating() #to avoid drift
+    RD = min(np.sqrt(rating[1]**2+c**2), 350)
     return rating
 
+q = np.log(10)/400
+
+def g(RD): return 1/np.sqrt(1+3*q**2*RD**2/np.pi**2)
+
+def E(s, rating, opp_rating, opp_RD):
+    return 1/(1+10**(-g(opp_RD)*(rating-opp_rating)/400))
+
+def d(s, rating, opp_rating, opp_RD):
+    E1 = E(s, rating, opp_rating, opp_RD)
+    d2 = (q**2*g(opp_RD)**2*E1*(1-E1))**-1
+    return np.sqrt(d2)
+
+def r1(r, RD, opp_r, opp_RD, s):
+    E1 = E(s, rating, opp_rating, opp_RD)
+    g1 = g(opp_RD)
+    d1 = d(s, rating, opp_rating, opp_RD)
+    return r + q/(1/RD**2+1/d1**2)*g1*(s-E1)
+
+def RD1(r, RD, opp_r, opp_RD, s):
+    d1 = d(s, rating, opp_rating, opp_RD)
+    return np.sqrt((1/RD**2+1/d1**2)**-1)
+
 def update_rating(year, teams, match):
-    r, b = [], []
-    for i in range(len(match.red)): r.append(teams[match.red[i]].rating)
-    for i in range(len(match.blue)): b.append(teams[match.blue[i]].rating)
-    match.set_ratings(r.copy(), b.copy())
+    red, blue = [], []
+    red_ratings, blue_ratings = [], []
+    red_RDs, blue_RDs = [], []
 
-    win_margin = (match.red_score - match.blue_score)/sd[year]
-    pred_win_margin = 4/1000*(sum(r)-sum(b))
+    for i in range(len(match.red)):
+        red.append(teams[match.red[i]].rating)
+        red_ratings.append(teams[match.red[i]].rating[0])
+        red_RDs.append(teams[match.red[i]].rating[1])
+    for i in range(len(match.blue)):
+        blue.append(teams[match.blue[i]].rating)
+        blue_ratings.append(teams[match.blue[i]].rating[0])
+        blue_RDs.append(teams[match.blue[i]].rating[1])
 
-    k = 4 if match.playoff else 12
-    for i in range(len(r)): r[i] = r[i] + k*(win_margin-pred_win_margin)
-    for i in range(len(b)): b[i] = b[i] - k*(win_margin-pred_win_margin)
-    match.set_ratings_end(r.copy(), b.copy())
+    match.set_ratings(red.copy(), blue.copy())
 
-    for i in range(len(r)): teams[match.red[i]].set_rating(r[i])
-    for i in range(len(b)): teams[match.blue[i]].set_rating(b[i])
+    print(red)
+    print(blue)
+
+    red_rating = sum(red_ratings)/len(red_ratings)
+    blue_rating = sum(blue_ratings)/len(blue_ratings)
+
+    red_RD = sum(red_RDs)/len(red_RDs)
+    blue_RD = sum(blue_RDs)/len(blueRDs)
+
+    red_rating_new = r1(red_rating, red_RD, blue_rating, blue_RD, match.get_win_actual())
+    blue_rating_new = r1(blue_rating, blue_RD, red_rating, red_RD, 1-match.get_win_actual())
+
+    red_diff = red_rating_new - red_rating
+    blue_diff = blue_rating_new - blue_rating
+
+    red_RD_new = RD1(red_rating, red_RD, blue_rating, blue_RD, match.get_win_actual())
+    blue_RD_new = RD1(blue_rating, blue_RD, red_rating, red_RD, 1-match.get_win_actual())
+
+    red_RD_diff = red_RD_new - red_RD
+    blue_RD_diff = blue_RD_new - blue_RD
+
+    for i in range(len(red)):
+        red[i] = [red[i][0]+red_diff, red[i][1]+red_RD_diff]
+
+    for i in range(len(blue)):
+        blue[i] = [blue[i][0]+blue_diff, blue[i][1]+blue_RD_diff]
+
+    print(red)
+    print(blue)
+    print()
+
+    #win_margin = (match.red_score - match.blue_score)/sd[year]
+    #pred_win_margin = 4/1000*(sum(r)-sum(b))
+
+    #k = 4 if match.playoff else 12
+    #for i in range(len(r)): r[i] = r[i] + k*(win_margin-pred_win_margin)
+    #for i in range(len(b)): b[i] = b[i] - k*(win_margin-pred_win_margin)
+
+    match.set_ratings_end(red.copy(), blue.copy())
+
+    for i in range(len(r)): teams[match.red[i]].set_rating(red[i])
+    for i in range(len(b)): teams[match.blue[i]].set_rating(blue[i])
 
 def win_probability(red, blue):
-    return 1/(10**((sum(blue)-sum(red))/400)+1)
+    red_ratings, blue_ratings = [], []
+    red_RDs, blue_RDs = [], []
+
+    for i in range(len(red)):
+        red_ratings.append(red[i][0])
+        red_RDs.append(red[i][1])
+    for i in range(len(blue)):
+        blue_ratings.append(blue[i][0])
+        blue_RDs.append(blue[i][1])
+    red_rating = sum(red_ratings)/len(red_ratings)
+    blue_rating = sum(blue_ratings)/len(blue_ratings)
+
+    red_RD = sum(red_RDs)/len(red_RDs)
+    blue_RD = sum(blue_RDs)/len(blue_RDs)
+    g1 = g(np.sqrt(red_RD**2+blue_RD**2))
+    return 1/(1+10**(-g1*(red_rating-blue_rating)/400))
