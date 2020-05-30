@@ -16,7 +16,7 @@ def processYear(year, all_teams):
         for alliance in [match.red, match.blue]:
             for team in alliance:
                 if team not in teams:
-                    if year==2002: teams[team] = Team(team, 1500)
+                    if year==2002: teams[team] = Team(team, [1500, 350])
                     else:
                         if teams_1yr!=None and team in teams_1yr: team_1yr = teams_1yr[team].get_rating_max()
                         else: team_1yr = elo.new_rating()
@@ -36,6 +36,7 @@ def processYear(year, all_teams):
 def processYears(startYear, endYear):
     all_teams = set()
     for year in range(startYear, endYear+1):
+        print(year)
         processYear(year, all_teams)
     utils.saveAllTeams(all_teams)
 

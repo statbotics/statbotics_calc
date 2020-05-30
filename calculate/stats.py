@@ -33,13 +33,16 @@ def mean():
         print(year)
         teams = utils.loadTeams(year)
 
-        elos = []
+        ratings = []
+        RDs = []
         for team in teams.values():
-            elos.append(team.get_rating())
-        elos.sort()
+            ratings.append(team.get_rating()[0])
+            RDs.append(team.get_rating()[1])
+        ratings.sort()
 
-        print("Elo Avg: " + str(sum(elos)/len(elos)))
-        print("Elo 1%: " + str(elos[-int(len(elos)/100)]))
+        print("Rating Avg: " + str(sum(ratings)/len(ratings)))
+        print("RD Avg: " + str(sum(RDs)/len(RDs)))
+        print("Elo 1%: " + str(ratings[-int(len(ratings)/100)]))
         #plt.hist(elos)
         #plt.show()
 
