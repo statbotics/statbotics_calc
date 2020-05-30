@@ -4,5 +4,5 @@
 constants.py
 docs/*
 
-./data/processed_matches/*
-./data/teams/*
+./calculate/data/processed_matches/*
+./calculate/data/teams/*
