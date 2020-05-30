@@ -3,3 +3,6 @@
 
 constants.py
 docs/*
+
+./data/processed_matches/*
+./data/teams/*
