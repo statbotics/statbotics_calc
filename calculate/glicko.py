@@ -26,23 +26,29 @@ q = np.log(10)/400
 
 def g(RD): return 1/np.sqrt(1+3*q**2*RD**2/np.pi**2)
 
-def E(s, rating, opp_rating, opp_RD):
-    return 1/(1+10**(-g(opp_RD)*(rating-opp_rating)/400))
+def E(rating, opp_rating, opp_RD):
+    #return 1/(1+10**(-g(opp_RD)*(rating-opp_rating)/400))
+    return 0.004 * (rating-opp_rating)
 
-def d(s, rating, opp_rating, opp_RD):
-    E1 = E(s, rating, opp_rating, opp_RD)
+def d(rating, opp_rating, opp_RD):
+    E1 = E(rating, opp_rating, opp_RD)
     d2 = (q**2*g(opp_RD)**2*E1*(1-E1))**-1
     return np.sqrt(d2)
 
 def r1(r, RD, opp_r, opp_RD, s):
-    E1 = E(s, r, opp_r, opp_RD)
+    E1 = E(r, opp_r, opp_RD)
     g1 = g(opp_RD)
-    d1 = d(s, r, opp_r, opp_RD)
+    d1 = d(r, opp_r, opp_RD)
     return r + q/(1/RD**2+1/d1**2)*g1*(s-E1)
 
-def RD1(r, RD, opp_r, opp_RD, s):
-    d1 = d(s, r, opp_r, opp_RD)
+def RD1(r, RD, opp_r, opp_RD):
+    d1 = d(r, opp_r, opp_RD)
     return np.sqrt((1/RD**2+1/d1**2)**-1)
+
+def sign(x):
+    if(x>0): return 1
+    if(x<0): return -1
+    return 0
 
 def update_rating(year, teams, match):
     red, blue = [], []
@@ -67,14 +73,17 @@ def update_rating(year, teams, match):
     blue_RD = sum(blue_RDs)/len(blue_RDs)
     win_margin = (match.red_score - match.blue_score)/sd[year]
     win_margin = (1+win_margin)/2
+
+    win_margin = sign(win_margin)*min(abs(win_margin), 1)
+
     red_rating_new = r1(red_rating, red_RD, blue_rating, blue_RD, win_margin)
     blue_rating_new = r1(blue_rating, blue_RD, red_rating, red_RD, 1-win_margin)
 
     red_diff = red_rating_new - red_rating
     blue_diff = blue_rating_new - blue_rating
 
-    red_RD_new = RD1(red_rating, red_RD, blue_rating, blue_RD, win_margin)
-    blue_RD_new = RD1(blue_rating, blue_RD, red_rating, red_RD, 1-win_margin)
+    red_RD_new = RD1(red_rating, red_RD, blue_rating, blue_RD)
+    blue_RD_new = RD1(blue_rating, blue_RD, red_rating, red_RD)
 
     red_RD_diff = red_RD_new - red_RD
     blue_RD_diff = blue_RD_new - blue_RD

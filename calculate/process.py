@@ -1,6 +1,6 @@
 from classes import Team
 import utils
-import elo
+import glicko
 
 def processYear(year, all_teams):
     matches = utils.loadMatches(year)
@@ -19,14 +19,14 @@ def processYear(year, all_teams):
                     if year==2002: teams[team] = Team(team, [1500, 350])
                     else:
                         if teams_1yr!=None and team in teams_1yr: team_1yr = teams_1yr[team].get_rating_max()
-                        else: team_1yr = elo.new_rating()
+                        else: team_1yr = glicko.new_rating()
 
                         if teams_2yr!=None and team in teams_2yr: team_2yr = teams_2yr[team].get_rating_max()
-                        else: team_2yr = elo.new_rating()
+                        else: team_2yr = glicko.new_rating()
 
-                        teams[team] = Team(team, elo.existing_rating(team_1yr, team_2yr))
+                        teams[team] = Team(team, glicko.existing_rating(team_1yr, team_2yr))
 
-    for match in matches: elo.update_rating(year, teams, match)
+    for match in matches: glicko.update_rating(year, teams, match)
     utils.saveProcessedMatches(year, matches)
     utils.saveTeams(year, teams)
 
