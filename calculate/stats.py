@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import statistics
 import utils
 
 def getStats(year):
@@ -39,6 +40,7 @@ def mean():
         elos.sort()
 
         print("Elo Avg: " + str(sum(elos)/len(elos)))
+        print("Elo Std: " + str(statistics.pstdev(elos)))
         print("Elo 1%: " + str(elos[-int(len(elos)/100)]))
         #plt.hist(elos)
         #plt.show()

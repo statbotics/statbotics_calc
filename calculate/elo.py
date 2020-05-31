@@ -18,7 +18,7 @@ def existing_rating(team_1yr, team_2yr):
     return rating
 
 def logistic(margin):
-    n = 0.5
+    n = 1
     return ((4/n)/(1+math.exp(-n*margin))-2/n)
 
 def update_rating(year, teams, match):
