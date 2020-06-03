@@ -44,7 +44,7 @@ def update_rating(year, teams, match):
         r[i] = r[i] + k*(diff)
     for i in range(len(b)):
         b[i] = b[i] - k*(diff)
-        
+
     match.set_ratings_end(r.copy(), b.copy())
 
     for i in range(len(r)):

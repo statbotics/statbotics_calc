@@ -1,6 +1,4 @@
 import pickle
-import shutil
-import os
 
 
 def dump(path, data):
