@@ -13,6 +13,7 @@ pandas = "*"
 pymysql = "*"
 sqlalchemy = "*"
 flake8 = "*"
+trueskill = "*"
 
 [requires]
 python_version = "3.7"

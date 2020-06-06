@@ -10,12 +10,16 @@ sd_new = {2002: 11.82, 2003: 32.49, 2004: 39.94, 2005: 20.61, 2006: 23.07,
 
 
 def new_rating():
+    return 1500
+
+
+def mean_reversion():
     return 1450
 
 
 def existing_rating(team_1yr, team_2yr):
     rating = 0.70 * team_1yr + 0.30 * team_2yr  # previous seasons elo
-    rating = 0.80 * rating + 0.20 * new_rating()  # to avoid drift
+    rating = 0.80 * rating + 0.20 * mean_reversion()  # to avoid drift
     return rating
 
 
