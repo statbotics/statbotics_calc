@@ -19,13 +19,24 @@ def new_rating():
 
 
 def mean_reversion():
-    return env.create_rating(mu=1450, sigma=sigma_env)
+    return env.create_rating(mu=1400, sigma=sigma_env)
 
 
-def existing_rating(team):
-    mu, sigma, alpha = team.get_rating_max(), team.rating.sigma, 0.25
-    mu = (1-alpha) * mu + alpha * (mu_env-100)
-    sigma = (1-alpha) * sigma + alpha * sigma_env
+def existing_rating(team_1yr, team_2yr):
+    if team_1yr is None:
+        mu1, sigma = mean_reversion()
+    else:
+        mu1, sigma = team_1yr.get_rating_max().mu, team_1yr.rating.sigma
+
+    if team_2yr is None:
+        mu2, _ = mean_reversion()
+    else:
+        mu2, _ = team_2yr.get_rating_max()
+
+    mu = 0.70 * mu1 + 0.30 * mu2
+
+    mu = 0.80 * mu + 0.20 * mean_reversion().mu
+    sigma = 0.80 * sigma + 0.20 * mean_reversion().sigma
     return env.create_rating(mu=mu, sigma=sigma)
 
 
@@ -34,10 +45,11 @@ def update_rating(year, teams, match):
     b = [teams[match.blue[i]].rating for i in range(len(match.blue))]
     match.set_ratings(r, b)
 
+    # lower rank is better
     if match.winner == "red":
-        nr, nb = env.rate([r, b], ranks=[1, 0])
+        nr, nb = env.rate([r, b], ranks=[0, 1])
     elif match.winner == "blue":
-        nb, nr = env.rate([r, b], ranks=[0, 1])
+        nr, nb = env.rate([r, b], ranks=[1, 0])
     else:
         nr, nb = env.rate([r, b], ranks=[0, 0])
 

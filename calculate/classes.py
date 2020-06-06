@@ -1,4 +1,5 @@
-import elo
+# import elo
+import ts as elo
 
 
 class Match:

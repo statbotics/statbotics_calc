@@ -38,7 +38,7 @@ def mean():
 
         elos = []
         for team in teams.values():
-            elos.append(team.get_rating())
+            elos.append(team.get_rating().mu)
         elos.sort()
 
         print("Elo Avg: " + str(sum(elos)/len(elos)))

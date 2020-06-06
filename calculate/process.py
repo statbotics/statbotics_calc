@@ -26,14 +26,14 @@ def processYear(year, all_teams):
                         teams[team] = Team(team, elo.new_rating())
                     else:
                         if teams_1yr is not None and team in teams_1yr:
-                            team_1yr = teams_1yr[team].get_rating_max()
+                            team_1yr = teams_1yr[team]
                         else:
-                            team_1yr = elo.mean_reversion()
+                            team_1yr = None
 
                         if teams_2yr is not None and team in teams_2yr:
-                            team_2yr = teams_2yr[team].get_rating_max()
+                            team_2yr = teams_2yr[team]
                         else:
-                            team_2yr = elo.mean_reversion()
+                            team_2yr = None
 
                         teams[team] = Team(team, elo.existing_rating(team_1yr,
                                                                      team_2yr))
@@ -51,6 +51,7 @@ def processYear(year, all_teams):
 def processYears(startYear, endYear):
     all_teams = set()
     for year in range(startYear, endYear+1):
+        print(year)
         processYear(year, all_teams)
     utils.saveAllTeams(all_teams)
 

@@ -18,7 +18,17 @@ def mean_reversion():
 
 
 def existing_rating(team_1yr, team_2yr):
-    rating = 0.70 * team_1yr + 0.30 * team_2yr  # previous seasons elo
+    if team_1yr is None:
+        rating1 = mean_reversion()
+    else:
+        rating1 = team_1yr.get_rating_max()
+
+    if team_2yr is None:
+        rating2 = mean_reversion()
+    else:
+        rating2 = team_2yr.get_rating_max()
+
+    rating = 0.70 * rating1 + 0.30 * rating2  # previous seasons elo
     rating = 0.80 * rating + 0.20 * mean_reversion()  # to avoid drift
     return rating
 
